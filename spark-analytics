@@ -20,12 +20,14 @@
 
 # Preserve the user's CWD so that relative paths are passed correctly to
 #+ the underlying Python script.
+# --authorized-address=209.12.74.162/32 
 SPARK_EC2_DIR="$(dirname "$0")"
 
 python -Wdefault "${SPARK_EC2_DIR}/spark_ec2.py" \
     --key-pair=analytics-sandbox -i ${HOME}/.ssh/analytics-sandbox.pem --profile=sandbox \
     --instance-type=m4.2xlarge --master-instance-type=m4.large --slaves=2 --hadoop-major-version=yarn \
-    --region=us-west-2 --zone=us-west-2a --ebs-vol-size=50 --no-ganglia --authorized-address=209.12.74.162/32 \
+    --region=us-west-2 --zone=us-west-2a --ebs-vol-size=50 --no-ganglia \
     '--additional-tags=Owner:alexander.smirnov@mulesoft.com' --copy-aws-credentials --delete-groups \
-    --subnet-id=subnet-cb67eeaf --vpc-id=vpc-9776fff3 \
+    --spark-ec2-git-repo=https://github.com/alexsmirnov/spark-ec2 --spark-ec2-git-branch=branch-1.6 \
+    --subnet-id=subnet-41eb6125 --vpc-id=vpc-9776fff3 --private-ips \
     "$@"
