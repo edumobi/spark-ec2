@@ -25,7 +25,7 @@ SPARK_EC2_DIR="$(dirname "$0")"
 
 python -Wdefault "${SPARK_EC2_DIR}/spark_ec2.py" \
     --key-pair=analytics-sandbox -i ${HOME}/.ssh/analytics-sandbox.pem --profile=sandbox \
-    --instance-type=m4.2xlarge --master-instance-type=m4.large --slaves=2 --hadoop-major-version=yarn \
+    --instance-type=m3.2xlarge --master-instance-type=m3.large --slaves=2 --hadoop-major-version=yarn \
     --region=us-west-2 --zone=us-west-2a --ebs-vol-size=50 --no-ganglia \
     '--additional-tags=Owner:alexander.smirnov@mulesoft.com' --copy-aws-credentials --delete-groups \
     --spark-ec2-git-repo=https://github.com/alexsmirnov/spark-ec2 --spark-ec2-git-branch=branch-1.6 \
