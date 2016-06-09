@@ -30,10 +30,10 @@ case "$HADOOP_MAJOR_VERSION" in
     ;;
   yarn)
     case "$SPARK_VERSION" in
-      1.6.*)
-           HADOOP_VERSION=2.6.3
-           wget http://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-2.6.3/hadoop-2.6.3.tar.gz
-        ;;
+      #1.6.*)
+           #HADOOP_VERSION=2.6.3
+           #wget http://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-2.6.3/hadoop-2.6.3.tar.gz
+        #;;
       *)
            HADOOP_VERSION=2.4.0
            wget http://s3.amazonaws.com/spark-related-packages/hadoop-${HADOOP_VERSION}.tar.gz
