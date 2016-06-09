@@ -29,11 +29,19 @@ case "$HADOOP_MAJOR_VERSION" in
     cp /root/hadoop-native/* /root/persistent-hdfs/lib/native/
     ;;
   yarn)
-    wget http://s3.amazonaws.com/spark-related-packages/hadoop-2.4.0.tar.gz
+    case "$SPARK_VERSION" in
+      1.6.*)
+           HADOOP_VERSION=2.6.0
+        ;;
+      *)
+           HADOOP_VERSION=2.4.0
+        ;;
+    esac
+    wget http://s3.amazonaws.com/spark-related-packages/hadoop-${HADOOP_VERSION}.tar.gz
     echo "Unpacking Hadoop"
     tar xvzf hadoop-*.tar.gz > /tmp/spark-ec2_hadoop.log
     rm hadoop-*.tar.gz
-    mv hadoop-2.4.0/ persistent-hdfs/
+    mv hadoop-${HADOOP_VERSION}/  persistent-hdfs/
 
     # Have single conf dir
     rm -rf /root/persistent-hdfs/etc/hadoop/
