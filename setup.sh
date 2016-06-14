@@ -1,8 +1,10 @@
 #!/bin/bash
 
 sudo yum install -y -q pssh
+curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+sudo yum install -y -q sbt
 
-# usage: echo_time_diff name start_time end_time
+# usage: echo_cwmastertime_diff name start_time end_time
 echo_time_diff () {
   local format='%Hh %Mm %Ss'
 
