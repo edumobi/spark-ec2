@@ -313,6 +313,12 @@ def parse_args():
         "--copy-aws-credentials", action="store_true", default=False,
         help="Add AWS credentials to hadoop configuration to allow Spark to access S3")
     parser.add_option(
+        "--aws-access-key-id", type="string", default="",
+        help="Add AWS access key to hadoop configuration to allow Spark to access S3")
+    parser.add_option(
+        "--aws-secret-access-key", type="string", default="",
+        help="Add AWS access key to hadoop configuration to allow Spark to access S3")
+    parser.add_option(
         "--subnet-id", default=None,
         help="VPC subnet to launch instances in")
     parser.add_option(
@@ -1089,8 +1095,8 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         template_vars["aws_access_key_id"] = conn.aws_access_key_id
         template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
     else:
-        template_vars["aws_access_key_id"] = ""
-        template_vars["aws_secret_access_key"] = ""
+        template_vars["aws_access_key_id"] = conf.aws_access_key_id
+        template_vars["aws_secret_access_key"] = conf.aws_secret_access_key
 
     # Create a temp directory in which we will place all the files to be
     # deployed after we substitue template parameters in them
