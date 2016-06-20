@@ -1095,8 +1095,8 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         template_vars["aws_access_key_id"] = conn.aws_access_key_id
         template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
     else:
-        template_vars["aws_access_key_id"] = conf.aws_access_key_id
-        template_vars["aws_secret_access_key"] = conf.aws_secret_access_key
+        template_vars["aws_access_key_id"] = opts.aws_access_key_id
+        template_vars["aws_secret_access_key"] = opts.aws_secret_access_key
 
     # Create a temp directory in which we will place all the files to be
     # deployed after we substitue template parameters in them
