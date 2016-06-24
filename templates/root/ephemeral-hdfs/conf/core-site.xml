@@ -61,6 +61,18 @@
   </property>
 
   <property>
+    <name>fs.s3a.access.key</name>
+    <description>AWS access key ID. Omit for Role-based authentication.</description>
+    <value>{{aws_access_key_id}}</value>
+  </property>
+
+  <property>
+    <name>fs.s3a.secret.key</name>
+    <description>AWS secret key. Omit for Role-based authentication.</description>
+    <value>{{aws_secret_access_key}}</value>
+  </property>
+
+  <property>
     <name>hadoop.security.group.mapping</name>
     <value>org.apache.hadoop.security.ShellBasedUnixGroupsMapping</value>
   </property>
