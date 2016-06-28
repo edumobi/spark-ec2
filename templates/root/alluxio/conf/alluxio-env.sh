@@ -5,7 +5,7 @@
 # the following variables should be set:
 #
 # - JAVA_HOME, to point to your JAVA installation
-# - ALLUXIO_MASTER_ADDRESS, to bind the master to a different IP address or hostname
+# - ALLUXIO_MASTER_HOSTNAME, to bind the master to a different IP address or hostname
 # - ALLUXIO_UNDERFS_ADDRESS, to set the under filesystem address.
 # - ALLUXIO_WORKER_MEMORY_SIZE, to set how much memory to use (e.g. 1000mb, 2gb) per worker
 # - ALLUXIO_RAM_FOLDER, to set where worker stores in memory data
@@ -26,7 +26,7 @@ else
 fi
 
 export JAVA="$JAVA_HOME/bin/java"
-export ALLUXIO_MASTER_ADDRESS={{active_master}}
+export ALLUXIO_MASTER_HOSTNAME={{active_master}}
 export ALLUXIO_UNDERFS_ADDRESS=hdfs://{{active_master}}:9000
 #export ALLUXIO_UNDERFS_ADDRESS=hdfs://localhost:9000
 export ALLUXIO_WORKER_MEMORY_SIZE={{default_tachyon_mem}}
@@ -39,14 +39,10 @@ export ALLUXIO_JAVA_OPTS+="
   -Dalluxio.debug=false
   -Dalluxio.underfs.address=$ALLUXIO_UNDERFS_ADDRESS
   -Dalluxio.underfs.hdfs.impl=$ALLUXIO_UNDERFS_HDFS_IMPL
-  -Dalluxio.data.folder=$ALLUXIO_UNDERFS_ADDRESS/alluxio/data
-  -Dalluxio.workers.folder=$ALLUXIO_UNDERFS_ADDRESS/alluxio/workers
   -Dalluxio.worker.memory.size=$ALLUXIO_WORKER_MEMORY_SIZE
-  -Dalluxio.worker.data.folder=$ALLUXIO_RAM_FOLDER/alluxioworker/
   -Dalluxio.master.worker.timeout.ms=60000
-  -Dalluxio.master.hostname=$ALLUXIO_MASTER_ADDRESS
+  -Dalluxio.master.hostname=$ALLUXIO_MASTER_HOSTNAME
   -Dalluxio.master.journal.folder=$ALLUXIO_HOME/journal/
-  -Dalluxio.master.pinlist=/pinfiles;/pindata
 "
 
 # Master specific parameters. Default to ALLUXIO_JAVA_OPTS.
