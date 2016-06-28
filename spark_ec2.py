@@ -80,22 +80,22 @@ VALID_SPARK_VERSIONS = set([
 ])
 
 SPARK_TACHYON_MAP = {
-    "1.0.0": "0.4.1",
-    "1.0.1": "0.4.1",
-    "1.0.2": "0.4.1",
-    "1.1.0": "0.5.0",
-    "1.1.1": "0.5.0",
-    "1.2.0": "0.5.0",
-    "1.2.1": "0.5.0",
-    "1.3.0": "0.5.0",
-    "1.3.1": "0.5.0",
-    "1.4.0": "0.6.4",
-    "1.4.1": "0.6.4",
-    "1.5.0": "0.7.1",
-    "1.5.1": "0.7.1",
-    "1.5.2": "0.7.1",
-    "1.6.0": "0.8.2",
-    "1.6.1": "0.8.2",
+    "1.0.0": ("tachyon","0.4.1"),
+    "1.0.1": ("tachyon","0.4.1"),
+    "1.0.2": ("tachyon","0.4.1"),
+    "1.1.0": ("tachyon","0.5.0"),
+    "1.1.1": ("tachyon","0.5.0"),
+    "1.2.0": ("tachyon","0.5.0"),
+    "1.2.1": ("tachyon","0.5.0"),
+    "1.3.0": ("tachyon","0.5.0"),
+    "1.3.1": ("tachyon","0.5.0"),
+    "1.4.0": ("tachyon","0.6.4"),
+    "1.4.1": ("tachyon","0.6.4"),
+    "1.5.0": ("tachyon","0.7.1"),
+    "1.5.1": ("tachyon","0.7.1"),
+    "1.5.2": ("tachyon","0.7.1"),
+    "1.6.0": ("alluxio","1.1.0"),
+    "1.6.1": ("alluxio","1.1.0"),
 }
 
 DEFAULT_SPARK_VERSION = SPARK_EC2_VERSION
@@ -454,7 +454,7 @@ EC2_INSTANCE_TYPES = {
 
 
 def get_tachyon_version(spark_version):
-    return SPARK_TACHYON_MAP.get(spark_version, "")
+    return SPARK_TACHYON_MAP.get(spark_version, ("tachyon",""))
 
 
 # Attempt to resolve an appropriate AMI given the architecture and region of the request.
@@ -818,7 +818,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
             ssh_write(slave_address, opts, ['tar', 'x'], dot_ssh_tar)
 
     modules = ['spark', 'ephemeral-hdfs', 'persistent-hdfs',
-               'mapreduce', 'spark-standalone', 'tachyon', 'rstudio']
+               'mapreduce', 'spark-standalone', 'rstudio']
 
     if opts.hadoop_major_version == "1":
         modules = list(filter(lambda x: x != "mapreduce", modules))
@@ -1063,7 +1063,8 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
     if "." in opts.spark_version:
         # Pre-built Spark deploy
         spark_v = get_validate_spark_version(opts.spark_version, opts.spark_git_repo)
-        tachyon_v = get_tachyon_version(spark_v)
+        tachyon_v = get_tachyon_version(spark_v)[1]
+        modules.append(get_tachyon_version(spark_v)[0])
     else:
         # Spark-only custom deploy
         spark_v = "%s|%s" % (opts.spark_git_repo, opts.spark_version)
