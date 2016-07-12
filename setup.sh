@@ -3,6 +3,7 @@ wget --no-cookies --header "Cookie: gpw_e24=xxx; oraclelicense=accept-secureback
 yum -y localinstall jdk-8u74-linux-x64.rpm
 /usr/sbin/alternatives --auto java
 sed -i 's!/usr/lib/jvm/java-1.7.0!/usr/java/jdk1.8.0_74!' /root/.bash_profile
+rm -f jdk-8u74-linux-x64.rpm
 sudo yum install -y -q pssh
 curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
 sudo yum install -y -q sbt
