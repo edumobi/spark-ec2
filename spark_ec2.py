@@ -97,7 +97,7 @@ SPARK_TACHYON_MAP = {
     "1.5.2": ("tachyon","0.7.1"),
     "1.6.0": ("alluxio","1.1.0"),
     "1.6.1": ("alluxio","1.1.0"),
-    "1.6.2": ("alluxio","1.1.0"),
+    "1.6.2": ("alluxio","1.2.0"),
 }
 
 DEFAULT_SPARK_VERSION = SPARK_EC2_VERSION
@@ -320,6 +320,9 @@ def parse_args():
     parser.add_option(
         "--aws-secret-access-key", type="string", default="",
         help="Add AWS access key to hadoop configuration to allow Spark to access S3")
+    parser.add_option(
+        "--underfs", type="string", default="",
+        help="Optional url for Alluxio underfs")
     parser.add_option(
         "--subnet-id", default=None,
         help="VPC subnet to launch instances in")
@@ -1066,10 +1069,12 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         # Pre-built Spark deploy
         spark_v = get_validate_spark_version(opts.spark_version, opts.spark_git_repo)
         tachyon_v = get_tachyon_version(spark_v)[1]
+        tachyon_n = get_tachyon_version(spark_v)[0]
         modules.append(get_tachyon_version(spark_v)[0])
     else:
         # Spark-only custom deploy
         spark_v = "%s|%s" % (opts.spark_git_repo, opts.spark_version)
+        tachyon_n = ""
         tachyon_v = ""
         print("Deploying Spark via git hash; Tachyon won't be set up")
         modules = filter(lambda x: x != "tachyon", modules)
@@ -1088,7 +1093,9 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         "swap": str(opts.swap),
         "modules": '\n'.join(modules),
         "spark_version": spark_v,
+        "tachyon_name": tachyon_n,
         "tachyon_version": tachyon_v,
+        "tachyon_underfs": opts.underfs,
         "hadoop_major_version": opts.hadoop_major_version,
         "spark_worker_instances": worker_instances_str,
         "spark_master_opts": opts.master_opts

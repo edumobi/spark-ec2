@@ -27,10 +27,16 @@ fi
 
 export JAVA="$JAVA_HOME/bin/java"
 export ALLUXIO_MASTER_HOSTNAME={{active_master}}
-export ALLUXIO_UNDERFS_ADDRESS=hdfs://{{active_master}}:9000
-#export ALLUXIO_UNDERFS_ADDRESS=hdfs://localhost:9000
+if [[ -n "{{tachyon_underfs}}" ]] ; then
+    export ALLUXIO_UNDERFS_ADDRESS="{{tachyon_underfs}}"
+else
+    export ALLUXIO_UNDERFS_ADDRESS=hdfs://{{active_master}}:9000
+fi
 export ALLUXIO_WORKER_MEMORY_SIZE={{default_tachyon_mem}}
 export ALLUXIO_UNDERFS_HDFS_IMPL=org.apache.hadoop.hdfs.DistributedFileSystem
+
+export AWS_ACCESS_KEY_ID="{{aws_access_key_id}}"
+export AWS_SECRET_ACCESS_KEY="{{aws_secret_access_key}}"
 
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

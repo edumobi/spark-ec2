@@ -53,6 +53,7 @@
   <property>
     <name>fs.s3n.awsSecretAccessKey</name>
     <value>{{aws_secret_access_key}}</value>
+ </property>
  
   <property>
     <name>fs.s3a.access.key</name>
@@ -65,7 +66,10 @@
     <description>AWS secret key. Omit for Role-based authentication.</description>
     <value>{{aws_secret_access_key}}</value>
   </property>
-
- </property>
+  
+  <property>
+    <name>fs.alluxio.impl</name>
+    <value>alluxio.hadoop.FileSystem</value>
+  </property>
 
 </configuration>
