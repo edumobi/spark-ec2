@@ -14,12 +14,13 @@ export SPARK_MASTER_IP={{active_master}}
 export MASTER=`cat /root/spark-ec2/cluster-url`
 
 export SPARK_SUBMIT_LIBRARY_PATH="$SPARK_SUBMIT_LIBRARY_PATH:/root/ephemeral-hdfs/lib/native/"
-export SPARK_EXTRA_CLASSPATH="/root/ephemeral-hdfs/share/hadoop/hdfs/lib/aws-java-sdk-1.7.4.jar:/root/ephemeral-hdfs/share/hadoop/hdfs/lib/hadoop-aws-2.7.0.jar:$SPARK_CLASSPATH"
+
+SPARK_EXTRA_CLASSPATH="/root/ephemeral-hdfs/share/hadoop/hdfs/lib/aws-java-sdk-1.7.4.jar:/root/ephemeral-hdfs/share/hadoop/hdfs/lib/hadoop-aws-2.7.0.jar"
 ALLUXIO_CLIENT_JAR="/root/{{tachyon_name}}/core/client/target/{{tachyon_name}}-core-client-{{tachyon_version}}-jar-with-dependencies.jar"
 if [[ -f "$ALLUXIO_CLIENT_JAR" ]] ; then
-    export SPARK_EXTRA_CLASSPATH="$ALLUXIO_CLIENT_JAR:$SPARK_EXTRA_CLASSPATH"
+    # export SPARK_EXTRA_CLASSPATH="$ALLUXIO_CLIENT_JAR:$SPARK_EXTRA_CLASSPATH"
 fi
-export SPARK_SUBMIT_CLASSPATH="$SPARK_EXTRA_CLASSPATH:$SPARK_SUBMIT_CLASSPATH:/root/ephemeral-hdfs/conf"
+export SPARK_SUBMIT_CLASSPATH="$SPARK_CLASSPATH:$SPARK_SUBMIT_CLASSPATH:/root/ephemeral-hdfs/conf:$SPARK_EXTRA_CLASSPATH"
 
 # Bind Spark's web UIs to this machine's public EC2 hostname otherwise fallback to private IP:
 export SPARK_PUBLIC_DNS=`
