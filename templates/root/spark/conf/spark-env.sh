@@ -15,7 +15,7 @@ export MASTER=`cat /root/spark-ec2/cluster-url`
 
 export SPARK_SUBMIT_LIBRARY_PATH="$SPARK_SUBMIT_LIBRARY_PATH:/root/ephemeral-hdfs/lib/native/"
 
-SPARK_EXTRA_CLASSPATH="/root/ephemeral-hdfs/share/hadoop/hdfs/lib/aws-java-sdk-1.7.4.jar:/root/ephemeral-hdfs/share/hadoop/hdfs/lib/hadoop-aws-2.7.0.jar"
+SPARK_EXTRA_CLASSPATH="/root/ephemeral-hdfs/share/hadoop/hdfs/lib/aws-java-sdk-1.7.4.jar:/root/ephemeral-hdfs/share/hadoop/hdfs/lib/hadoop-aws-2.7.2.jar"
 ALLUXIO_CLIENT_JAR="/root/{{tachyon_name}}/core/client/target/{{tachyon_name}}-core-client-{{tachyon_version}}-jar-with-dependencies.jar"
 #if [[ -f "$ALLUXIO_CLIENT_JAR" ]] ; then
     # export SPARK_EXTRA_CLASSPATH="$ALLUXIO_CLIENT_JAR:$SPARK_EXTRA_CLASSPATH"

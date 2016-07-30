@@ -28,6 +28,6 @@ python -Wdefault "${SPARK_EC2_DIR}/spark_ec2.py" \
     --instance-type=m3.2xlarge --master-instance-type=m3.large --slaves=2 --hadoop-major-version=yarn \
     --region=us-west-2 --zone=us-west-2a \
     '--additional-tags=Owner:alexander.smirnov@mulesoft.com' --copy-aws-credentials --delete-groups \
-    --spark-ec2-git-repo=https://github.com/alexsmirnov/spark-ec2 --spark-ec2-git-branch=spark-1.6.1-h2.6 \
+    --spark-ec2-git-repo=https://github.com/alexsmirnov/spark-ec2 --spark-ec2-git-branch=spark-2.0 \
     --subnet-id=subnet-41eb6125 --vpc-id=vpc-9776fff3 --private-ips \
     "$@"
