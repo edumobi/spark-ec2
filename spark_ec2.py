@@ -82,31 +82,31 @@ VALID_SPARK_VERSIONS = set([
 ])
 
 SPARK_TACHYON_MAP = {
-    "1.0.0": "0.4.1",
-    "1.0.1": "0.4.1",
-    "1.0.2": "0.4.1",
-    "1.1.0": "0.5.0",
-    "1.1.1": "0.5.0",
-    "1.2.0": "0.5.0",
-    "1.2.1": "0.5.0",
-    "1.3.0": "0.5.0",
-    "1.3.1": "0.5.0",
-    "1.4.0": "0.6.4",
-    "1.4.1": "0.6.4",
-    "1.5.0": "0.7.1",
-    "1.5.1": "0.7.1",
-    "1.5.2": "0.7.1",
-    "1.6.0": "0.8.2",
-    "1.6.1": "0.8.2",
-    "1.6.2": "0.8.2",
-    "2.0.0": "",
+    "1.0.0": ("tachyon", "0.4.1"),
+    "1.0.1": ("tachyon", "0.4.1"),
+    "1.0.2": ("tachyon", "0.4.1"),
+    "1.1.0": ("tachyon", "0.5.0"),
+    "1.1.1": ("tachyon", "0.5.0"),
+    "1.2.0": ("tachyon", "0.5.0"),
+    "1.2.1": ("tachyon", "0.5.0"),
+    "1.3.0": ("tachyon", "0.5.0"),
+    "1.3.1": ("tachyon", "0.5.0"),
+    "1.4.0": ("tachyon", "0.6.4"),
+    "1.4.1": ("tachyon", "0.6.4"),
+    "1.5.0": ("tachyon", "0.7.1"),
+    "1.5.1": ("tachyon", "0.7.1"),
+    "1.5.2": ("tachyon", "0.7.1"),
+    "1.6.0": ("alluxio", "1.1.0"),
+    "1.6.1": ("alluxio", "1.1.0"),
+    "1.6.2": ("alluxio", "1.2.0"),
+    "2.0.0": ("alluxio", "1.2.0"),
 }
 
 DEFAULT_SPARK_VERSION = SPARK_EC2_VERSION
 DEFAULT_SPARK_GITHUB_REPO = "https://github.com/apache/spark"
 
 # Default location to get the spark-ec2 scripts (and ami-list) from
-DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/amplab/spark-ec2"
+DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/edumobi/spark-ec2"
 DEFAULT_SPARK_EC2_BRANCH = "branch-2.0"
 
 
@@ -242,7 +242,7 @@ def parse_args():
              "the directory is not created and its contents are copied directly into /. " +
              "(default: %default).")
     parser.add_option(
-        "--hadoop-major-version", default="1",
+        "--hadoop-major-version", default="yarn",
         help="Major version of Hadoop. Valid options are 1 (Hadoop 1.0.4), 2 (CDH 4.2.0), yarn " +
              "(Hadoop 2.4.0) (default: %default)")
     parser.add_option(
@@ -318,6 +318,15 @@ def parse_args():
     parser.add_option(
         "--copy-aws-credentials", action="store_true", default=False,
         help="Add AWS credentials to hadoop configuration to allow Spark to access S3")
+    parser.add_option(
+        "--aws-access-key-id", type="string", default="",
+        help="Add AWS access key to hadoop configuration to allow Spark to access S3")
+    parser.add_option(
+        "--aws-secret-access-key", type="string", default="",
+        help="Add AWS access key to hadoop configuration to allow Spark to access S3")
+    parser.add_option(
+        "--underfs", type="string", default="",
+        help="Optional url for Alluxio underfs")
     parser.add_option(
         "--subnet-id", default=None,
         help="VPC subnet to launch instances in")
@@ -474,7 +483,7 @@ EC2_INSTANCE_TYPES = {
 
 
 def get_tachyon_version(spark_version):
-    return SPARK_TACHYON_MAP.get(spark_version, "")
+    return SPARK_TACHYON_MAP.get(spark_version, ("tachyon", ""))
 
 
 # Attempt to resolve an appropriate AMI given the architecture and region
@@ -563,6 +572,9 @@ def launch_cluster(conn, opts, cluster_name):
         master_group.authorize('udp', 2049, 2049, authorized_address)
         master_group.authorize('tcp', 4242, 4242, authorized_address)
         master_group.authorize('udp', 4242, 4242, authorized_address)
+        # spark: protocol
+        master_group.authorize('tcp', 6066, 6066, authorized_address)
+        master_group.authorize('tcp', 7077, 7077, authorized_address)
         # RM in YARN mode uses 8088
         master_group.authorize('tcp', 8088, 8088, authorized_address)
         if opts.ganglia:
@@ -847,7 +859,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
             ssh_write(slave_address, opts, ['tar', 'x'], dot_ssh_tar)
 
     modules = ['spark', 'ephemeral-hdfs', 'persistent-hdfs',
-               'mapreduce', 'spark-standalone', 'tachyon', 'rstudio']
+               'mapreduce', 'spark-standalone', 'rstudio']
 
     if opts.hadoop_major_version == "1":
         modules = list(filter(lambda x: x != "mapreduce", modules))
@@ -1096,11 +1108,13 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         # Pre-built Spark deploy
         spark_v = get_validate_spark_version(
             opts.spark_version, opts.spark_git_repo)
-        validate_spark_hadoop_version(spark_v, opts.hadoop_major_version)
-        tachyon_v = get_tachyon_version(spark_v)
+        tachyon_v = get_tachyon_version(spark_v)[1]
+        tachyon_n = get_tachyon_version(spark_v)[0]
+        modules.append(get_tachyon_version(spark_v)[0])
     else:
         # Spark-only custom deploy
         spark_v = "%s|%s" % (opts.spark_git_repo, opts.spark_version)
+        tachyon_n = ""
         tachyon_v = ""
 
     if tachyon_v == "":
@@ -1122,7 +1136,9 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         "swap": str(opts.swap),
         "modules": '\n'.join(modules),
         "spark_version": spark_v,
+        "tachyon_name": tachyon_n,
         "tachyon_version": tachyon_v,
+        "tachyon_underfs": opts.underfs,
         "hadoop_major_version": opts.hadoop_major_version,
         "spark_worker_instances": worker_instances_str,
         "spark_master_opts": opts.master_opts
@@ -1132,8 +1148,8 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         template_vars["aws_access_key_id"] = conn.aws_access_key_id
         template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
     else:
-        template_vars["aws_access_key_id"] = ""
-        template_vars["aws_secret_access_key"] = ""
+        template_vars["aws_access_key_id"] = opts.aws_access_key_id
+        template_vars["aws_secret_access_key"] = opts.aws_secret_access_key
 
     # Create a temp directory in which we will place all the files to be
     # deployed after we substitue template parameters in them
