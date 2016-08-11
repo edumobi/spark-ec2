@@ -51,7 +51,7 @@ else:
     raw_input = input
     xrange = range
 
-SPARK_EC2_VERSION = "1.6.0"
+SPARK_EC2_VERSION = "1.6.2"
 SPARK_EC2_DIR = os.path.dirname(os.path.realpath(__file__))
 
 VALID_SPARK_VERSIONS = set([
@@ -76,6 +76,8 @@ VALID_SPARK_VERSIONS = set([
     "1.5.1",
     "1.5.2",
     "1.6.0",
+    "1.6.1",
+    "1.6.2",
     "2.0.0-preview",
 ])
 
@@ -95,6 +97,8 @@ SPARK_TACHYON_MAP = {
     "1.5.1": "0.7.1",
     "1.5.2": "0.7.1",
     "1.6.0": "0.8.2",
+    "1.6.1": "0.8.2",
+    "1.6.2": "0.8.2",
     "2.0.0-preview": "",
 }
 
@@ -103,7 +107,7 @@ DEFAULT_SPARK_GITHUB_REPO = "https://github.com/apache/spark"
 
 # Default location to get the spark-ec2 scripts (and ami-list) from
 DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/amplab/spark-ec2"
-DEFAULT_SPARK_EC2_BRANCH = "branch-1.5"
+DEFAULT_SPARK_EC2_BRANCH = "branch-2.0"
 
 
 def setup_external_libs(libs):
@@ -125,7 +129,8 @@ def setup_external_libs(libs):
         lib_dir = os.path.join(SPARK_EC2_LIB_DIR, versioned_lib_name)
 
         if not os.path.isdir(lib_dir):
-            tgz_file_path = os.path.join(SPARK_EC2_LIB_DIR, versioned_lib_name + ".tar.gz")
+            tgz_file_path = os.path.join(
+                SPARK_EC2_LIB_DIR, versioned_lib_name + ".tar.gz")
             print(" - Downloading {lib}...".format(lib=lib["name"]))
             download_stream = urlopen(
                 "{prefix}/{first_letter}/{lib_name}/{lib_name}-{lib_version}.tar.gz".format(
@@ -139,7 +144,8 @@ def setup_external_libs(libs):
                 tgz_file.write(download_stream.read())
             with open(tgz_file_path, "rb") as tar:
                 if hashlib.md5(tar.read()).hexdigest() != lib["md5"]:
-                    print("ERROR: Got wrong md5sum for {lib}.".format(lib=lib["name"]), file=stderr)
+                    print("ERROR: Got wrong md5sum for {lib}.".format(
+                        lib=lib["name"]), file=stderr)
                     sys.exit(1)
             tar = tarfile.open(tgz_file_path)
             tar.extractall(path=SPARK_EC2_LIB_DIR)
@@ -194,7 +200,7 @@ def parse_args():
         help="If you have multiple profiles (AWS or boto config), you can configure " +
              "additional, named profiles by using this option (default: %default)")
     parser.add_option(
-        "-t", "--instance-type", default="m1.large",
+        "-t", "--instance-type", default="m3.large",
         help="Type of instance to launch (default: %default). " +
              "WARNING: must be 64-bit; small instances won't work")
     parser.add_option(
@@ -364,29 +370,34 @@ def get_or_make_group(conn, name, vpc_id):
         print("Creating security group " + name)
         return conn.create_security_group(name, "Spark EC2 group", vpc_id)
 
+
 def validate_spark_hadoop_version(spark_version, hadoop_version):
     if "." in spark_version:
         parts = spark_version.split(".")
         if parts[0].isdigit():
             spark_major_version = float(parts[0])
             if spark_major_version > 1.0 and hadoop_version != "yarn":
-              print("Spark version: {v}, does not support Hadoop version: {hv}".
-                    format(v=spark_version, hv=hadoop_version), file=stderr)
-              sys.exit(1)
+                print("Spark version: {v}, does not support Hadoop version: {hv}".
+                      format(v=spark_version, hv=hadoop_version), file=stderr)
+                sys.exit(1)
         else:
-            print("Invalid Spark version: {v}".format(v=spark_version), file=stderr)
+            print("Invalid Spark version: {v}".format(
+                v=spark_version), file=stderr)
             sys.exit(1)
+
 
 def get_validate_spark_version(version, repo):
     if "." in version:
         # Remove leading v to handle inputs like v1.5.0
         version = version.lstrip("v")
         if version not in VALID_SPARK_VERSIONS:
-            print("Don't know about Spark version: {v}".format(v=version), file=stderr)
+            print("Don't know about Spark version: {v}".format(
+                v=version), file=stderr)
             sys.exit(1)
         return version
     else:
-        github_commit_url = "{repo}/commit/{commit_hash}".format(repo=repo, commit_hash=version)
+        github_commit_url = "{repo}/commit/{commit_hash}".format(
+            repo=repo, commit_hash=version)
         request = Request(github_commit_url)
         request.get_method = lambda: 'HEAD'
         try:
@@ -394,14 +405,16 @@ def get_validate_spark_version(version, repo):
         except HTTPError as e:
             print("Couldn't validate Spark commit: {url}".format(url=github_commit_url),
                   file=stderr)
-            print("Received HTTP response code of {code}.".format(code=e.code), file=stderr)
+            print("Received HTTP response code of {code}.".format(
+                code=e.code), file=stderr)
             sys.exit(1)
         return version
 
 
 # Source: http://aws.amazon.com/amazon-linux-ami/instance-type-matrix/
 # Last Updated: 2015-06-19
-# For easy maintainability, please keep this manually-inputted dictionary sorted by key.
+# For easy maintainability, please keep this manually-inputted dictionary
+# sorted by key.
 EC2_INSTANCE_TYPES = {
     "c1.medium":   "pvm",
     "c1.xlarge":   "pvm",
@@ -464,17 +477,20 @@ def get_tachyon_version(spark_version):
     return SPARK_TACHYON_MAP.get(spark_version, "")
 
 
-# Attempt to resolve an appropriate AMI given the architecture and region of the request.
+# Attempt to resolve an appropriate AMI given the architecture and region
+# of the request.
 def get_spark_ami(opts):
     if opts.instance_type in EC2_INSTANCE_TYPES:
         instance_type = EC2_INSTANCE_TYPES[opts.instance_type]
     else:
         instance_type = "pvm"
-        print("Don't recognize %s, assuming type is pvm" % opts.instance_type, file=stderr)
+        print("Don't recognize %s, assuming type is pvm" %
+              opts.instance_type, file=stderr)
 
     # URL prefix from which to fetch AMI information
     ami_prefix = "{r}/{b}/ami-list".format(
-        r=opts.spark_ec2_git_repo.replace("https://github.com", "https://raw.github.com", 1),
+        r=opts.spark_ec2_git_repo.replace(
+            "https://github.com", "https://raw.github.com", 1),
         b=opts.spark_ec2_git_branch)
 
     ami_path = "%s/%s/%s" % (ami_prefix, opts.region, instance_type)
@@ -508,8 +524,10 @@ def launch_cluster(conn, opts, cluster_name):
             user_data_content = user_data_file.read()
 
     print("Setting up security groups...")
-    master_group = get_or_make_group(conn, cluster_name + "-master", opts.vpc_id)
-    slave_group = get_or_make_group(conn, cluster_name + "-slaves", opts.vpc_id)
+    master_group = get_or_make_group(
+        conn, cluster_name + "-master", opts.vpc_id)
+    slave_group = get_or_make_group(
+        conn, cluster_name + "-slaves", opts.vpc_id)
     authorized_address = opts.authorized_address
     if master_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
@@ -610,7 +628,8 @@ def launch_cluster(conn, opts, cluster_name):
             device.delete_on_termination = True
             block_map["/dev/sd" + chr(ord('s') + i)] = device
 
-    # AWS ignores the AMI-specified block device mapping for M3 (see SPARK-3342).
+    # AWS ignores the AMI-specified block device mapping for M3 (see
+    # SPARK-3342).
     if opts.instance_type.startswith('m3.'):
         for i in range(get_num_disks(opts.instance_type)):
             dev = BlockDeviceType()
@@ -661,7 +680,8 @@ def launch_cluster(conn, opts, cluster_name):
                         active_instance_ids.append(id_to_req[i].instance_id)
                 if len(active_instance_ids) == opts.slaves:
                     print("All %d slaves granted" % opts.slaves)
-                    reservations = conn.get_all_reservations(active_instance_ids)
+                    reservations = conn.get_all_reservations(
+                        active_instance_ids)
                     slave_nodes = []
                     for r in reservations:
                         slave_nodes += r.instances
@@ -672,12 +692,14 @@ def launch_cluster(conn, opts, cluster_name):
         except:
             print("Canceling spot instance requests")
             conn.cancel_spot_instance_requests(my_req_ids)
-            # Log a warning if any of these requests actually launched instances:
+            # Log a warning if any of these requests actually launched
+            # instances:
             (master_nodes, slave_nodes) = get_existing_cluster(
                 conn, opts, cluster_name, die_on_error=False)
             running = len(master_nodes) + len(slave_nodes)
             if running:
-                print(("WARNING: %d instances are still running" % running), file=stderr)
+                print(("WARNING: %d instances are still running" %
+                       running), file=stderr)
             sys.exit(0)
     else:
         # Launch non-spot instances
@@ -752,12 +774,14 @@ def launch_cluster(conn, opts, cluster_name):
 
     for master in master_nodes:
         master.add_tags(
-            dict(additional_tags, Name='{cn}-master-{iid}'.format(cn=cluster_name, iid=master.id))
+            dict(additional_tags,
+                 Name='{cn}-master-{iid}'.format(cn=cluster_name, iid=master.id))
         )
 
     for slave in slave_nodes:
         slave.add_tags(
-            dict(additional_tags, Name='{cn}-slave-{iid}'.format(cn=cluster_name, iid=slave.id))
+            dict(additional_tags,
+                 Name='{cn}-slave-{iid}'.format(cn=cluster_name, iid=slave.id))
         )
 
     # Return all the instances
@@ -781,7 +805,8 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
         """
         reservations = conn.get_all_reservations(
             filters={"instance.group-name": group_names})
-        instances = itertools.chain.from_iterable(r.instances for r in reservations)
+        instances = itertools.chain.from_iterable(
+            r.instances for r in reservations)
         return [i for i in instances if i.state not in ["shutting-down", "terminated"]]
 
     master_instances = get_instances([cluster_name + "-master"])
@@ -889,7 +914,8 @@ def is_ssh_available(host, opts, print_ssh_output=True):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT  # we pipe stderr through stdout to preserve output order
     )
-    cmd_output = s.communicate()[0]  # [1] is stderr, which we redirected to stdout
+    # [1] is stderr, which we redirected to stdout
+    cmd_output = s.communicate()[0]
 
     if s.returncode != 0 and print_ssh_output:
         # extra leading newline is for spacing in wait_for_cluster_state()
@@ -977,7 +1003,8 @@ def wait_for_cluster_state(conn, opts, cluster_instances, cluster_state):
 def get_num_disks(instance_type):
     # Source: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/InstanceStorage.html
     # Last Updated: 2015-06-19
-    # For easy maintainability, please keep this manually-inputted dictionary sorted by key.
+    # For easy maintainability, please keep this manually-inputted dictionary
+    # sorted by key.
     disks_by_instance = {
         "c1.medium":   1,
         "c1.xlarge":   4,
@@ -1048,7 +1075,8 @@ def get_num_disks(instance_type):
 # the first master instance in the cluster, and we expect the setup
 # script to be run on that instance to copy them to other nodes.
 #
-# root_dir should be an absolute path to the directory with the files we want to deploy.
+# root_dir should be an absolute path to the directory with the files we
+# want to deploy.
 def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
     active_master = get_dns_name(master_nodes[0], opts.private_ips)
 
@@ -1066,7 +1094,8 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
 
     if "." in opts.spark_version:
         # Pre-built Spark deploy
-        spark_v = get_validate_spark_version(opts.spark_version, opts.spark_git_repo)
+        spark_v = get_validate_spark_version(
+            opts.spark_version, opts.spark_git_repo)
         validate_spark_hadoop_version(spark_v, opts.hadoop_major_version)
         tachyon_v = get_tachyon_version(spark_v)
     else:
@@ -1075,10 +1104,11 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
         tachyon_v = ""
 
     if tachyon_v == "":
-      print("No valid Tachyon version found; Tachyon won't be set up")
-      modules.remove("tachyon")
+        print("No valid Tachyon version found; Tachyon won't be set up")
+        modules.remove("tachyon")
 
-    master_addresses = [get_dns_name(i, opts.private_ips) for i in master_nodes]
+    master_addresses = [get_dns_name(i, opts.private_ips)
+                        for i in master_nodes]
     slave_addresses = [get_dns_name(i, opts.private_ips) for i in slave_nodes]
     worker_instances_str = "%d" % opts.worker_instances if opts.worker_instances else ""
     template_vars = {
@@ -1122,7 +1152,8 @@ def deploy_files(conn, root_dir, opts, master_nodes, slave_nodes, modules):
                         with open(local_file, "w") as dest:
                             text = src.read()
                             for key in template_vars:
-                                text = text.replace("{{" + key + "}}", template_vars[key])
+                                text = text.replace(
+                                    "{{" + key + "}}", template_vars[key])
                             dest.write(text)
                             dest.close()
     # rsync the whole directory over to the master machine
@@ -1222,7 +1253,8 @@ def ssh_write(host, opts, command, arguments):
     tries = 0
     while True:
         proc = subprocess.Popen(
-            ssh_command(opts) + ['%s@%s' % (opts.user, host), stringify_command(command)],
+            ssh_command(opts) + ['%s@%s' %
+                                 (opts.user, host), stringify_command(command)],
             stdin=subprocess.PIPE)
         proc.stdin.write(arguments)
         proc.stdin.close()
@@ -1230,7 +1262,8 @@ def ssh_write(host, opts, command, arguments):
         if status == 0:
             break
         elif tries > 5:
-            raise RuntimeError("ssh_write failed with error %s" % proc.returncode)
+            raise RuntimeError(
+                "ssh_write failed with error %s" % proc.returncode)
         else:
             print("Error {0} while executing remote command, retrying after 30 seconds".
                   format(status), file=stderr)
@@ -1277,7 +1310,8 @@ def real_main():
     (opts, action, cluster_name) = parse_args()
 
     # Input parameter validation
-    spark_v = get_validate_spark_version(opts.spark_version, opts.spark_git_repo)
+    spark_v = get_validate_spark_version(
+        opts.spark_version, opts.spark_git_repo)
     validate_spark_hadoop_version(spark_v, opts.hadoop_major_version)
 
     if opts.wait is not None:
@@ -1351,7 +1385,8 @@ def real_main():
         if opts.profile is None:
             conn = ec2.connect_to_region(opts.region)
         else:
-            conn = ec2.connect_to_region(opts.region, profile_name=opts.profile)
+            conn = ec2.connect_to_region(
+                opts.region, profile_name=opts.profile)
     except Exception as e:
         print((e), file=stderr)
         sys.exit(1)
@@ -1365,7 +1400,8 @@ def real_main():
             print("ERROR: You have to start at least 1 slave", file=sys.stderr)
             sys.exit(1)
         if opts.resume:
-            (master_nodes, slave_nodes) = get_existing_cluster(conn, opts, cluster_name)
+            (master_nodes, slave_nodes) = get_existing_cluster(
+                conn, opts, cluster_name)
         else:
             (master_nodes, slave_nodes) = launch_cluster(conn, opts, cluster_name)
         wait_for_cluster_state(
@@ -1386,7 +1422,8 @@ def real_main():
                 print("> %s" % get_dns_name(inst, opts.private_ips))
             print("ALL DATA ON ALL NODES WILL BE LOST!!")
 
-        msg = "Are you sure you want to destroy the cluster {c}? (y/N) ".format(c=cluster_name)
+        msg = "Are you sure you want to destroy the cluster {c}? (y/N) ".format(
+            c=cluster_name)
         response = raw_input(msg)
         if response == "y":
             print("Terminating master...")
@@ -1398,7 +1435,8 @@ def real_main():
 
             # Delete security groups as well
             if opts.delete_groups:
-                group_names = [cluster_name + "-master", cluster_name + "-slaves"]
+                group_names = [cluster_name +
+                               "-master", cluster_name + "-slaves"]
                 wait_for_cluster_state(
                     conn=conn,
                     opts=opts,
@@ -1409,7 +1447,8 @@ def real_main():
                 attempt = 1
                 while attempt <= 3:
                     print("Attempt %d" % attempt)
-                    groups = [g for g in conn.get_all_security_groups() if g.name in group_names]
+                    groups = [g for g in conn.get_all_security_groups()
+                              if g.name in group_names]
                     success = True
                     # Delete individual rules in all groups before deleting groups to
                     # remove dependencies between them
@@ -1427,12 +1466,14 @@ def real_main():
                     time.sleep(30)  # Yes, it does have to be this long :-(
                     for group in groups:
                         try:
-                            # It is needed to use group_id to make it work with VPC
+                            # It is needed to use group_id to make it work with
+                            # VPC
                             conn.delete_security_group(group_id=group.id)
                             print("Deleted security group %s" % group.name)
                         except boto.exception.EC2ResponseError:
                             success = False
-                            print("Failed to delete security group %s" % group.name)
+                            print("Failed to delete security group %s" %
+                                  group.name)
 
                     # Unfortunately, group.revoke() returns True even if a rule was not
                     # deleted, so this needs to be rerun if something fails
@@ -1446,9 +1487,11 @@ def real_main():
                     print("Try re-running in a few minutes.")
 
     elif action == "login":
-        (master_nodes, slave_nodes) = get_existing_cluster(conn, opts, cluster_name)
+        (master_nodes, slave_nodes) = get_existing_cluster(
+            conn, opts, cluster_name)
         if not master_nodes[0].public_dns_name and not opts.private_ips:
-            print("Master has no public DNS name.  Maybe you meant to specify --private-ips?")
+            print(
+                "Master has no public DNS name.  Maybe you meant to specify --private-ips?")
         else:
             master = get_dns_name(master_nodes[0], opts.private_ips)
             print("Logging into master " + master + "...")
@@ -1473,9 +1516,11 @@ def real_main():
                     inst.reboot()
 
     elif action == "get-master":
-        (master_nodes, slave_nodes) = get_existing_cluster(conn, opts, cluster_name)
+        (master_nodes, slave_nodes) = get_existing_cluster(
+            conn, opts, cluster_name)
         if not master_nodes[0].public_dns_name and not opts.private_ips:
-            print("Master has no public DNS name.  Maybe you meant to specify --private-ips?")
+            print(
+                "Master has no public DNS name.  Maybe you meant to specify --private-ips?")
         else:
             print(get_dns_name(master_nodes[0], opts.private_ips))
 
@@ -1503,7 +1548,8 @@ def real_main():
                         inst.stop()
 
     elif action == "start":
-        (master_nodes, slave_nodes) = get_existing_cluster(conn, opts, cluster_name)
+        (master_nodes, slave_nodes) = get_existing_cluster(
+            conn, opts, cluster_name)
         print("Starting slaves...")
         for inst in slave_nodes:
             if inst.state not in ["shutting-down", "terminated"]:
