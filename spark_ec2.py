@@ -1524,6 +1524,12 @@ def real_main():
         else:
             print(get_dns_name(master_nodes[0], opts.private_ips))
 
+    elif action == "get-slaves":
+        (master_nodes, slave_nodes) = get_existing_cluster(
+            conn, opts, cluster_name)
+        for inst in slave_nodes:
+            print(get_dns_name(inst, opts.private_ips))
+
     elif action == "stop":
         response = raw_input(
             "Are you sure you want to stop the cluster " +
